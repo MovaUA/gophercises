@@ -56,7 +56,7 @@ func main() {
 
 		answer := strings.TrimSpace(scanner.Text())
 
-		if answer == p.a {
+		if strings.EqualFold(answer, p.a) {
 			correct++
 		}
 	}

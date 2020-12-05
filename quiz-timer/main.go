@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bufio"
-	"context"
 	"encoding/csv"
 	"flag"
 	"fmt"
@@ -35,25 +33,13 @@ func main() {
 
 	reader.FieldsPerRecord = 2
 
-	scanner := bufio.NewScanner(os.Stdin)
-
 	fmt.Print("Press 'Enter' to start the quiz...")
-	if !scanner.Scan() {
-		if err := scanner.Err(); err != nil {
-			exit("could not read the standard input: %v\n", err)
-		}
-	}
-
-	answerCh := make(chan string)
-	errCh := make(chan error)
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
+	fmt.Scanln()
 
 	count := 0
 	correct := 0
 
-	go scanAnswers(ctx, scanner, answerCh, errCh)
+	timer := time.NewTimer(timeout)
 
 	for {
 		record, err := reader.Read()
@@ -73,14 +59,15 @@ func main() {
 
 		fmt.Printf("Problem #%d: %s = ", count, p.q)
 
+		answerCh := make(chan string)
+		go getAnswer(answerCh)
+
 		select {
 		case answer := <-answerCh:
 			if strings.EqualFold(answer, p.a) {
 				correct++
 			}
-		case err := <-errCh:
-			exit("\ncould not read the standard input: %v\n", err)
-		case <-ctx.Done():
+		case <-timer.C:
 			fmt.Printf("\nTimeout of %v expired\n", timeout)
 			for {
 				_, err := reader.Read()
@@ -90,7 +77,6 @@ func main() {
 				if err != nil {
 					exit("could not read a record: %v\n", err)
 				}
-
 				count++
 			}
 			break
@@ -109,23 +95,8 @@ func exit(format string, args ...interface{}) {
 	log.Fatalf(format, args...)
 }
 
-type scanner interface {
-	Scan() bool
-	Text() string
-	Err() error
-}
-
-func scanAnswers(ctx context.Context, s scanner, answerCh chan<- string, errCh chan<- error) {
-	for s.Scan() {
-		select {
-		case answerCh <- strings.TrimSpace(s.Text()):
-		case <-ctx.Done():
-			return
-		}
-	}
-
-	select {
-	case errCh <- s.Err():
-	case <-ctx.Done():
-	}
+func getAnswer(answerCh chan<- string) {
+	var answer string
+	fmt.Scanf("%s\n", &answer)
+	answerCh <- answer
 }

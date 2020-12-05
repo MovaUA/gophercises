@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -44,7 +45,7 @@ func main() {
 
 		questionNumber++
 
-		question, answer := record[0], record[1]
+		question, answer := strings.TrimSpace(record[0]), strings.TrimSpace(record[1])
 
 		fmt.Printf("Problem #%d: %v = ", questionNumber, question)
 
@@ -52,7 +53,7 @@ func main() {
 			break
 		}
 
-		if scanner.Text() == answer {
+		if strings.TrimSpace(scanner.Text()) == answer {
 			correctAnswers++
 		}
 	}

@@ -13,15 +13,13 @@ import (
 )
 
 func main() {
-	filePath := flag.String("f", "problems.csv", "path to the CSV file with problems to solve")
+	csvFileName := flag.String("csv", "problems.csv", "path to the CSV file with problems to solve")
 
 	flag.Parse()
 
-	fmt.Printf("provided file is %q\n", *filePath)
-
-	file, err := os.Open(*filePath)
+	file, err := os.Open(*csvFileName)
 	if err != nil {
-		log.Fatalf("could not open provided file: %v\n", err)
+		exit("could not open provided file: %v\n", err)
 	}
 	defer file.Close()
 
@@ -31,8 +29,8 @@ func main() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 
-	questionNumber := 0
-	correctAnswers := 0
+	count := 0
+	correct := 0
 
 	for {
 		record, err := reader.Read()
@@ -40,27 +38,41 @@ func main() {
 			break
 		}
 		if err != nil {
-			log.Fatalf("could not read a record: %v\n", err)
+			exit("could not read a record: %v\n", err)
 		}
 
-		questionNumber++
+		count++
 
-		question, answer := strings.TrimSpace(record[0]), strings.TrimSpace(record[1])
+		p := problem{
+			q: strings.TrimSpace(record[0]),
+			a: strings.TrimSpace(record[1]),
+		}
 
-		fmt.Printf("Problem #%d: %v = ", questionNumber, question)
+		fmt.Printf("Problem #%d: %s = ", count, p.q)
 
 		if !scanner.Scan() {
 			break
 		}
 
-		if strings.TrimSpace(scanner.Text()) == answer {
-			correctAnswers++
+		answer := strings.TrimSpace(scanner.Text())
+
+		if answer == p.a {
+			correct++
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Fatalf("could not read console: %v\n", err)
+		exit("could not read the standard input: %v\n", err)
 	}
 
-	fmt.Printf("You scored %d out of %d.\n", correctAnswers, questionNumber)
+	fmt.Printf("You scored %d out of %d.\n", correct, count)
+}
+
+type problem struct {
+	q string
+	a string
+}
+
+func exit(format string, args ...interface{}) {
+	log.Fatalf(format, args...)
 }
